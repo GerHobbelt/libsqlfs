@@ -87,7 +87,7 @@ struct sqlfs_t
     else \
         r = ~SQLITE_OK; \
     if (r != SQLITE_OK) \
-        r = sqlite3_prepare((a), (b), (c), (d), (e)); \
+        r = sqlite3_prepare_v2((a), (b), (c), (d), (e)); \
     if (r == SQLITE_OK) \
         get_sqlfs(sqlfs)->stmts[INDEX] = stmt; \
     else \
@@ -1709,7 +1709,20 @@ static int check_parent_write(sqlfs_t *sqlfs, const char *path)
     begin_transaction(get_sqlfs(sqlfs));
     r = get_parent_path(path, ppath);
     if (r == SQLITE_OK)
+    {
         result = (sqlfs_proc_access(sqlfs, (ppath), W_OK | X_OK));
+#ifndef HAVE_LIBFUSE
+        /* libfuse seems to enforce that the parent directory before getting
+         * here, but without libfuse, we need to do it manually */
+        if (result == -ENOENT)
+        {
+            result = check_parent_write(sqlfs, ppath);
+            if (result == 0)
+                ensure_existence(sqlfs, ppath, TYPE_DIR);
+            result = (sqlfs_proc_access(sqlfs, (ppath), W_OK | X_OK));
+        }
+#endif
+    }
     commit_transaction(get_sqlfs(sqlfs), 1);
     return result;
 }
@@ -3260,6 +3273,8 @@ static void * sqlfs_t_init(const char *db_file, const char *password)
             show_msg(stderr, "Opening the database with provided key/password failed!\n");
             return 0;
         }
+        // TODO: Replace hardcoding of SQLCipher compatibility version
+        sqlfs_set_cipher_compatibility(sql_fs, 3);
         sqlite3_exec(sql_fs->db, "PRAGMA cipher_page_size = 8192;", NULL, NULL, NULL);
     }
     else
@@ -3392,6 +3407,28 @@ int sqlfs_open_key(const char *db_file, const uint8_t *key, size_t keylen, sqlfs
     if (*psqlfs == 0)
         return 0;
     return 1;
+}
+
+int sqlfs_set_cipher_compatibility(sqlfs_t *db, const uint32_t cipher_compatibility) {
+    if (!db) { return 1; }
+    char *errorMsg;
+    
+    char buf[256];
+    snprintf(buf, 256, "PRAGMA cipher_compatibility = %"PRIu32";", cipher_compatibility);
+    
+    if (sqlite3_exec(get_sqlfs(db)->db, buf, NULL, NULL, &errorMsg) != SQLITE_OK)
+    {
+        show_msg(stderr,
+                 "failed to set database cipher_compatibility: %s",
+                 errorMsg);
+        return 0;
+    }
+    return 1;
+}
+
+int sqlfs_vacuum(sqlfs_t *sqlfs)
+{
+    return sqlite3_exec(get_sqlfs(sqlfs)->db, "VACUUM;", NULL, NULL, NULL);
 }
 
 int sqlfs_rekey(const char *db_file_name, const uint8_t *old_key, size_t old_key_len,
