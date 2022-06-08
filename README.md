@@ -1,4 +1,4 @@
-Libsqlfs
+# Libsqlfs
 
 Copyright 2011-2013, various developers for Guardian Project
 Copyright 2006, Palmsource, Inc., an ACCESS company.
@@ -8,8 +8,7 @@ General Public License, version 2 or later versions as published by the Free
 Software Foundation.  See the file COPYING for the complete licensing terms.
 
 
-Introduction
-============
+## Introduction
 
 The libsqlfs library implements a POSIX style file system on top of an
 SQLite database.  It allows applications to have access to a full read/write
@@ -22,8 +21,7 @@ database to be accessed via OS level file system interfaces by normal
 applications.
  
 
-Rationale
-=========
+## Rationale
 
 PalmSource software developers originally created libsqlfs.  This library is
 an adjunct to the very popular open source SQLite database software.  Libsqlfs
@@ -74,58 +72,58 @@ one file, and at other times treat it as a collection of individually
 writable files.
 
 
-Installation
-============
+## Installation
 
 * As a Library
 
-Libsqlfs provides a GNU autoconf/automake based build system for building as
-an application library.  To build, please follow the normal GNU configure
-conventions.  Normally, the following command is all what's needed:
+  Libsqlfs provides a GNU autoconf/automake based build system for building as
+  an application library.  To build, please follow the normal GNU configure
+  conventions.  Normally, the following command is all what's needed:
 
-./configure --prefix=<install dir>
-make && make install
+  ```
+  ./configure --prefix=<install dir>
+  make && make install
+  ```
 
-<install dir> defaults to /usr/local if not specified.
+  <install dir> defaults to /usr/local if not specified.
 
-You have to be root for installing into system directories such as
-/usr/local.
+  You have to be root for installing into system directories such as
+  `/usr/local`.
 
-Both a static library and a shared library are built, unless you specify
-otherwise via options to configure.
+  Both a static library and a shared library are built, unless you specify
+  otherwise via options to configure.
 
 * As an FUSE module
 
-If you want to build it as a FUSE module, you need to have libfuse
-installed on your system.  This is less tested than the direct API.
+  If you want to build it as a FUSE module, you need to have libfuse
+  installed on your system.  This is less tested than the direct API.
 
-After running the script you shall have an executable called fuse_sqlfs.
-Run it as root to start a FUSE session on top of libsqlfs:
+  After running the script you shall have an executable called fuse_sqlfs.
+  Run it as root to start a FUSE session on top of libsqlfs:
 
-fuse_sqlfs <mnt point> 
+  fuse_sqlfs <mnt point> 
 
-then you shall see the libsqlfs file space exposed, and
-can be accessed by normal applications,  via the <mnt point>.
+  then you shall see the libsqlfs file space exposed, and
+  can be accessed by normal applications,  via the <mnt point>.
 
-example:
+  example:
 
-fuse_sqlfs /mnt/sqlfs &
+  fuse_sqlfs /mnt/sqlfs &
 
-ls /mnt/sqlfs
+  ls /mnt/sqlfs
 
-The location of the SQLite database is hard-coded in fuse_main.c.  Change the
-argument to sqlfs_init() to suit your needs.
+  The location of the SQLite database is hard-coded in fuse_main.c.  Change the
+  argument to sqlfs_init() to suit your needs.
 
-The database file that it opens is currently hard-coded in fuse_sqlfs.c as
-/tmp/fsdata.  If you want to use a different database file, or provide a
-key to an encrypted file, then just edit fuse_sqlfs.c and rebuild.
+  The database file that it opens is currently hard-coded in fuse_sqlfs.c as
+  /tmp/fsdata.  If you want to use a different database file, or provide a
+  key to an encrypted file, then just edit fuse_sqlfs.c and rebuild.
 
-For a sample application showing the usage of libsqlfs, see the test
-programs in the tests/ directory.
+  For a sample application showing the usage of libsqlfs, see the test
+  programs in the tests/ directory.
 
 
-Operating Modes
-===============
+## Operating Modes
 
 There are two modes of operation for libsqlfs: "init/destroy" and
 "open/close".  "init/destroy" requires sqlfs_init() to be called before any
@@ -138,15 +136,14 @@ program using this requires an "open" or "mounted" state.  This is the mode
 that is used by IOCipher.
 
 
-API
-===
+## API
 
 Libsqlfs started as an FUSE module so it implements the primitives as defined
 by FUSE version 2.5.3.  A libsqlfs session is represented by an object of type
 sqlfs_t.  All APIs require an explicit reference to a valid sqlfs_t.
 Specifically, the following file system primitives are implemented:
 
-
+```
 int sqlfs_proc_getattr(sqlfs_t *, const char *path, struct stat *stbuf);
 int sqlfs_proc_access(sqlfs_t *, const char *path, int mask);
 int sqlfs_proc_readlink(sqlfs_t *, const char *path, char *buf, size_t size);
@@ -171,7 +168,7 @@ int sqlfs_proc_write(sqlfs_t *, const char *path, const char *buf, size_t size, 
 int sqlfs_proc_statfs(sqlfs_t *, const char *path, struct statvfs *stbuf);
 int sqlfs_proc_release(sqlfs_t *, const char *path, struct fuse_file_info *fi);
 int sqlfs_proc_fsync(sqlfs_t *, const char *path, int isfdatasync, struct fuse_file_info *fi);
-
+```
 
 Their semantics are as defined by the FUSE documentation and the
 corresponding Unix file system calls.  Following the FUSE conventions, all
@@ -182,70 +179,70 @@ absolute paths to these FUSE primitive routines.
 In addition, other APIs provide environment setup, support for
 transaction and convenience functions: 
 
-int sqlfs_init(const char *)
+`int sqlfs_init(const char *)`
     initialize the libsqlfs library and sets the default database file name.
 
-int sqlfs_destroy()
+`int sqlfs_destroy()`
     clean up after sqlfs_init() when all operation is over.
 
-int sqlfs_open(const char *db, sqlfs_t **);
+`int sqlfs_open(const char *db, sqlfs_t **)`
     creates a new connection to the libsqlfs database.  The first argument,
     if not NULL, specifies a different database file from the default.
 
-int sqlfs_open_key(const char *db_file, const char *key, sqlfs_t **sqlfs);
+`int sqlfs_open_key(const char *db_file, const char *key, sqlfs_t **sqlfs)`
     creates a new connection to an encrypted libsqlfs database and unlocks it
     using the password provided.  The first argument, if not NULL, specifies a
     different database file from the default.
 
-int sqlfs_close(sqlfs_t *);
+`int sqlfs_close(sqlfs_t *)`
     closes and frees a libsqlfs connection.
 
 
-Low-level API
-=============
+## Low-level API
 
 You can operate on the filesystem on a level lower than the FUSE API with
 these functions:
 
-int sqlfs_del_tree(sqlfs_t *sqlfs, const char *key);
+`int sqlfs_del_tree(sqlfs_t *sqlfs, const char *key)`
     deletes a whole subtree.
 
-int sqlfs_get_value(sqlfs_t *sqlfs, const char *key, key_value *value, 
-    size_t begin, size_t end); 
+`int sqlfs_get_value(sqlfs_t *sqlfs, const char *key, key_value *value, 
+    size_t begin, size_t end)`
     reads contents of a file contained in a range
     (between offsets begin and end)
 
-int sqlfs_set_value(sqlfs_t *sqlfs, const char *key, const key_value *value, 
-    size_t begin,  size_t end);
+`int sqlfs_set_value(sqlfs_t *sqlfs, const char *key, const key_value *value, 
+    size_t begin,  size_t end)`
     writes contents of value to a file within the specified range
     (between offsets begin and end)
 
-int sqlfs_get_attr(sqlfs_t *sqlfs, const char *key, key_attr *attr);
+`int sqlfs_get_attr(sqlfs_t *sqlfs, const char *key, key_attr *attr)`
     reads the metadata of a file
     
-int sqlfs_set_attr(sqlfs_t *sqlfs, const char *key, const key_attr *attr);
+`int sqlfs_set_attr(sqlfs_t *sqlfs, const char *key, const key_attr *attr)`
     write the metadata of a file
 
-int sqlfs_set_type(sqlfs_t *sqlfs, const char *key, const char *type);
+`int sqlfs_set_type(sqlfs_t *sqlfs, const char *key, const char *type)`
     sets the "type" of the file content. 
       
-int sqlfs_begin_transaction(sqlfs_t *sqlfs);
+`int sqlfs_begin_transaction(sqlfs_t *sqlfs)`
     begins a SQLite transaction
     
-int sqlfs_complete_transaction(sqlfs_t *sqlfs, int i);
+`int sqlfs_complete_transaction(sqlfs_t *sqlfs, int i)`
     ends a SQLite transaction
 
 
-Implementation
-==============
+## Implementation
 
 The filesystem is implemented using the common pattern of blocks allocated to
 a file.  The file system is stored in a SQLite table, with the following
 columns:
 
+```
 full key path | type | inode   | uid     | gid     | mode    | acl  | attributes | atime   | mtime   | ctime   | size    | block_size
 text          | text | integer | integer | integer | integer | text | text       | integer | integer | integer | integer | integer
-
+```
+ 
 The key path must be an absolute path using "/" as the path separators.  The
 path is case sensitive.  The type of data associated with the key path can be
 one of these: "int", "double", "string", "dir", "sym link" and "blob".
@@ -256,15 +253,17 @@ by a block number which starts from 0.
 
 The table rows are created using:
 
- CREATE TABLE meta_data(key text, type text, inode integer, uid integer,
-                        gid integer, mode integer, acl text,
-                        attribute text, atime integer, mtime integer,
-                        ctime integer, size integer, block_size integer,
-                        primary key (key), unique(key));
- CREATE TABLE value_data (key text, block_no integer, data_block blob, unique(key, block_no));
- CREATE INDEX meta_index ON meta_data (key);
- CREATE INDEX value_index ON value_data (key, block_no);
-
+```
+CREATE TABLE meta_data(key text, type text, inode integer, uid integer,
+                       gid integer, mode integer, acl text,
+                       attribute text, atime integer, mtime integer,
+                       ctime integer, size integer, block_size integer,
+                       primary key (key), unique(key));
+CREATE TABLE value_data (key text, block_no integer, data_block blob, unique(key, block_no));
+CREATE INDEX meta_index ON meta_data (key);
+CREATE INDEX value_index ON value_data (key, block_no);
+```
+ 
 SQL transactions are used throughout the code to improve efficiency.  Note the
 transaction supports "levels"; that is, transaction calls can be nested and
 libsqlfs maintains an internal level count of the current transaction level.
@@ -281,16 +280,16 @@ additional "type" which can not be visible via the normal file attribute
 functions.  The "type" is used to support the specific needs of the setting
 registry application and can be one of the following:
 
-Null
-Dir
-Integer (32-bit)
-Double (a C double)
-String (a C zero-terminated string)
-Sym_link (symbolic link)
-Bool  (a boolean)
-List (a Glib list of values)
-Blob (a binary object)
-
+- Null
+- Dir
+- Integer (32-bit)
+- Double (a C double)
+- String (a C zero-terminated string)
+- Sym_link (symbolic link)
+- Bool  (a boolean)
+- List (a Glib list of values)
+- Blob (a binary object)
+ 
 Note all other file system primitives do not make use of the "type"; to them
 all files are blobs. At this point the "type" is meant for use by higher up
 application logic in applications using libsqlfs.
@@ -316,31 +315,29 @@ Originally, 'begin exclusive' was only used in LIBFUSE mode, and not in
 standalone library mode, where 'begin' was used.  But we found it too
 unreliable so we switched standalone mode to also use 'begin exclusive'.
 
- https://www.sqlite.org/lockingv3.html
- https://www.sqlite.org/lang_transaction.html
- https://www.sqlite.org/c3ref/busy_handler.html
+- https://www.sqlite.org/lockingv3.html
+- https://www.sqlite.org/lang_transaction.html
+- https://www.sqlite.org/c3ref/busy_handler.html
 
 
-Tests
-=====
+## Tests
 
 There is an included test suite in the tests/ subfolder.  They are a
 combination of C programs and bash scripts.  There are a number of ways to run
 the tests.  Here is to run them all:
 
- make check
+    make check
 
 If you want to see all of the messages, turn on verbose mode:
 
- make check V=1
+    make check V=1
 
 You can also select which tests you want to run:
 
- make check TESTS=fuse_sqlfs.test
+    make check TESTS=fuse_sqlfs.test
 
 
-Supported Platforms
-===================
+## Supported Platforms
 
 To date, libsqlfs is tested on 32-bit i386, 64-bit amd64 and ARM (Android
 and Palm Treo 650 phones).  It runs on GNU/Linux (Debian, Ubuntu,
@@ -358,15 +355,13 @@ FreeBSD or Solaris provided they have a FUSE that is compatible with the Linux
 FUSE.
 
 
-Supported Database
-==================
+## Supported Database
 
 To date, only SQLite and SQLCipher are supported.  SQLCipher is a
 version of SQLite that provides page-by-page AES-256 encryption.
 
 
-Notes on the Code
-=================
+## Notes on the Code
 
 There is a macro INDEX used in the implementation in sqlfs.c.  It is
 re-defined for each function that writes to the database using an
@@ -380,5 +375,5 @@ For more information, please contact:
 guardian-dev@lists.mayfirst.org
 
 The original authors are:
-Peter van der Linden  peter.vanderlinden@palmsource.com 
-Andy Tai, andy.tai@palmsource.com
+- Peter van der Linden  peter.vanderlinden@palmsource.com 
+- Andy Tai, andy.tai@palmsource.com
